@@ -88,7 +88,6 @@
             transform: scale(var(--game-scale)); transform-origin: top center;
         }
 
-        /* ENHANCEMENT 1 & 3: Layout Logic for wrapping */
         .target-slots { 
             display: flex; 
             flex-wrap: wrap; 
@@ -127,6 +126,7 @@
 
         .keyboard { 
             display: flex; flex-direction: column; align-items: center; width: 100%; 
+            min-height: 240px; /* Layout Cleanup: Keeps UI stable when switching views */
             transform: scale(var(--game-scale)); transform-origin: top center;
         }
         .kb-row { display: flex; justify-content: center; margin-bottom: 5px; width: 100%; }
@@ -279,7 +279,6 @@
     </div>
 
     <script>
-        // ENHANCEMENT 2: Updated Default Vocabulary
         let originalWords = [
             "Marie's Creative Classroom", 
             "Motivate", 
@@ -296,9 +295,21 @@
         let gameStyle = 'spell';
         let isCaps = false;
         let isWaitingForNext = false;
+        let currentLayout = 'qwerty'; // Enhancement: track keyboard view
         let scoreA = 0;
         let scoreB = 0;
-        const qwerty = [["Q","W","E","R","T","Y","U","I","O","P"], ["A","S","D","F","G","H","J","K","L"], ["Z","X","C","V","B","N","M"]];
+
+        // Key Layouts
+        const qwerty = [
+            ["Q","W","E","R","T","Y","U","I","O","P"], 
+            ["A","S","D","F","G","H","J","K","L"], 
+            ["Z","X","C","V","B","N","M"]
+        ];
+        const symbols = [
+            ["1","2","3","4","5","6","7","8","9","0"],
+            ["!", "@", "#", "&", "(", ")", "-", "_"],
+            ["\"", ":", ";", "'", "?", "/"]
+        ];
 
         window.onload = () => {
             const params = new URLSearchParams(window.location.search);
@@ -400,6 +411,7 @@
 
             wordIndex = 0;
             isWaitingForNext = false;
+            currentLayout = 'qwerty'; // Reset to standard layout on start
             hideNextButtons();
             if(gameMode === 'practice') { 
                 showScreen('game-screen'); 
@@ -428,7 +440,6 @@
             }
         }
 
-        // ENHANCEMENT 1: Intelligent Word Wrapping Implementation
         function renderUnscramble(container, side, phrase) {
             const wrapper = document.createElement('div');
             wrapper.className = "unscramble-container";
@@ -440,7 +451,6 @@
             poolDiv.className = "letter-pool";
             poolDiv.id = side + "-pool";
 
-            // Split phrase into words to create grouped containers
             const words = phrase.split(' ');
             words.forEach((w, wordIdx) => {
                 const wordGroup = document.createElement('div');
@@ -497,45 +507,67 @@
         function checkUnscrambleWin(side, phrase) {
             const slots = document.getElementById(side + "-target").querySelectorAll('.slot');
             let attempt = "";
-            let charIndex = 0;
             const targetNoSpaces = phrase.replace(/\s/g, '');
-            
-            slots.forEach(s => {
-                attempt += s.innerText || "";
-            });
-
+            slots.forEach(s => { attempt += s.innerText || ""; });
             if(attempt === targetNoSpaces) handleWin(side);
         }
 
         function renderKeyboard(container, side) {
             const kb = document.createElement('div'); kb.className = "keyboard";
-            qwerty.forEach(row => {
+            
+            // Choose the keys based on the state
+            const activeKeys = (currentLayout === 'qwerty') ? qwerty : symbols;
+
+            activeKeys.forEach(row => {
                 const rowDiv = document.createElement('div'); rowDiv.className = "kb-row";
                 row.forEach(l => {
                     const k = document.createElement('div'); k.className = "key";
-                    k.innerText = isCaps ? l.toUpperCase() : l.toLowerCase();
+                    // Only apply caps if in QWERTY layout
+                    k.innerText = (isCaps && currentLayout === 'qwerty') ? l.toUpperCase() : l.toLowerCase();
                     k.onclick = () => handleInput(side, k.innerText);
                     rowDiv.appendChild(k);
                 });
                 kb.appendChild(rowDiv);
             });
+
             const row4 = document.createElement('div'); row4.className = "kb-row";
-            const shift = document.createElement('div'); 
-            shift.className = "key" + (isCaps ? " key-active" : ""); 
-            shift.innerText = "SHIFT"; 
-            shift.onclick = () => { 
-                if(!isWaitingForNext) { 
-                    isCaps = !isCaps; 
-                    renderRound(container.id, side, false); 
-                } 
+            
+            // Toggle Button
+            const toggleBtn = document.createElement('div');
+            toggleBtn.className = "key";
+            toggleBtn.innerText = (currentLayout === 'qwerty') ? "123" : "ABC";
+            toggleBtn.style.width = "60px";
+            toggleBtn.onclick = () => {
+                currentLayout = (currentLayout === 'qwerty') ? 'symbols' : 'qwerty';
+                renderRound(container.id, side, false);
             };
+
+            // Shift Button (Only show for QWERTY)
+            if (currentLayout === 'qwerty') {
+                const shift = document.createElement('div'); 
+                shift.className = "key" + (isCaps ? " key-active" : ""); 
+                shift.innerText = "SHIFT"; 
+                shift.onclick = () => { 
+                    if(!isWaitingForNext) { 
+                        isCaps = !isCaps; 
+                        renderRound(container.id, side, false); 
+                    } 
+                };
+                row4.appendChild(shift);
+            }
+
             const space = document.createElement('div'); space.className = "key"; space.innerText = "SPACE"; space.style.width="80px"; space.onclick = () => handleInput(side, " ");
+            
             const del = document.createElement('div'); del.className = "key"; del.innerText = "DEL"; del.onclick = () => {
                 if(isWaitingForNext) return;
                 const d = document.getElementById(side + "-display"); d.innerText = d.innerText.slice(0, -1);
             };
-            row4.appendChild(shift); row4.appendChild(space); row4.appendChild(del);
-            kb.appendChild(row4); container.appendChild(kb);
+
+            row4.appendChild(toggleBtn);
+            row4.appendChild(space); 
+            row4.appendChild(del);
+            kb.appendChild(row4); 
+            container.appendChild(kb);
         }
 
         function handleInput(side, char) {
@@ -572,6 +604,7 @@
             wordIndex++;
             isWaitingForNext = false;
             isCaps = false;
+            currentLayout = 'qwerty'; // Revert to ABC when moving to next word
             hideNextButtons();
             if(wordIndex >= currentWords.length) { 
                 alert(`GAME OVER!\nFinal Scores:\nTeam A: ${scoreA}\nTeam B: ${scoreB}`); 
