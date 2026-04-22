@@ -22,6 +22,7 @@
             margin: 0;
             padding: 0;
             overflow-x: hidden;
+            touch-action: manipulation;
         }
 
         .menu-bg {
@@ -126,7 +127,7 @@
 
         .keyboard { 
             display: flex; flex-direction: column; align-items: center; width: 100%; 
-            min-height: 240px; /* Layout Cleanup: Keeps UI stable when switching views */
+            min-height: 240px;
             transform: scale(var(--game-scale)); transform-origin: top center;
         }
         .kb-row { display: flex; justify-content: center; margin-bottom: 5px; width: 100%; }
@@ -139,7 +140,7 @@
             font-weight: bold; font-size: 1rem; cursor: pointer; user-select: none;
             font-family: inherit; color: var(--bee-black);
         }
-        .key-active { background: var(--bee-yellow); transform: translateY(2px); box-shadow: none; }
+        .key-active { background: var(--bee-yellow); border-color: orange; }
 
         .duel-container { display: flex; width: 100vw; height: 75vh; }
         .team-side { flex: 1; display: flex; flex-direction: column; align-items: center; border: 1px solid #ddd; padding: 10px; overflow-y: auto; position: relative; }
@@ -178,7 +179,6 @@
         <button class="btn" onclick="openModeSelect('duel')">TEAM DUEL</button>
         <button class="btn" onclick="showScreen('edit-screen')">EDIT LIST</button>
         <button class="btn" onclick="showScreen('code-screen')">GAME LINK</button>
-        <button class="btn" onclick="showHistory()">LINK HISTORY</button>
     </div>
 
     <div id="mode-screen" class="screen">
@@ -255,8 +255,8 @@
                 <div id="r-play"></div>
             </div>
         </div>
-        <button class="btn" style="position:fixed; bottom:80px;" onclick="speakWord()">LISTEN</button>
-        <button id="next-btn-duel" class="btn btn-next" style="position:fixed; bottom:10px; width: 250px;" onclick="nextWord()">NEXT WORD ➔</button>
+        <button class="btn" style="position:fixed; bottom:80px; z-index:1000;" onclick="speakWord()">LISTEN</button>
+        <button id="next-btn-duel" class="btn btn-next" style="position:fixed; bottom:10px; width: 250px; z-index:1000;" onclick="nextWord()">NEXT WORD ➔</button>
     </div>
 
     <div id="edit-screen" class="screen">
@@ -273,33 +273,20 @@
         <button class="btn" onclick="loadByCode()">LOAD</button>
     </div>
 
-    <div id="history-screen" class="screen">
-        <h2>LINK HISTORY</h2>
-        <div id="history-list" style="display:flex; flex-direction:column;"></div>
-    </div>
-
     <script>
-        let originalWords = [
-            "Marie's Creative Classroom", 
-            "Motivate", 
-            "Achieve", 
-            "Reflect", 
-            "Inspire", 
-            "Empower", 
-            "Happy Teaching"
-        ];
-        
+        let originalWords = ["Marie", "Creative", "Classroom", "Motivate", "Achieve", "Reflect", "Inspire", "Empower"];
         let currentWords = [...originalWords];
         let wordIndex = 0;
         let gameMode = 'practice';
         let gameStyle = 'spell';
-        let isCaps = false;
         let isWaitingForNext = false;
-        let currentLayout = 'qwerty'; // Enhancement: track keyboard view
         let scoreA = 0;
         let scoreB = 0;
 
-        // Key Layouts
+        // --- NEW INDEPENDENT STATES ---
+        let capsState = { p: false, l: false, r: false };
+        let layoutState = { p: 'qwerty', l: 'qwerty', r: 'qwerty' };
+
         const qwerty = [
             ["Q","W","E","R","T","Y","U","I","O","P"], 
             ["A","S","D","F","G","H","J","K","L"], 
@@ -322,6 +309,7 @@
                 } catch(e) { console.log("URL load error"); }
             }
             document.getElementById('word-input').value = originalWords.join('\n');
+            createBees();
         };
 
         function adjustZoom(val) {
@@ -343,11 +331,9 @@
                 bee.className = 'pastel-bee';
                 bee.style.top = Math.random() * 80 + '%';
                 bee.style.animationDelay = (Math.random() * 5) + 's';
-                bee.style.animationDuration = (6 + Math.random() * 4) + 's';
                 menu.appendChild(bee);
             }
         }
-        createBees();
 
         function showScreen(id) {
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
@@ -359,41 +345,12 @@
             showScreen('mode-screen'); 
         }
 
-        function pickStudent(side) {
-            let inputId = (side === 'p') ? 'student-list-p' : (side === 'l' ? 'team-a-nums' : 'team-b-nums');
-            let pool = parseStudentNumbers(document.getElementById(inputId).value);
-            if(pool.length === 0) pool = Array.from({length: 20}, (_, i) => i + 1);
-            const result = pool[Math.floor(Math.random() * pool.length)];
-            document.getElementById('num-' + side).innerText = result;
-        }
-
-        function parseStudentNumbers(input) {
-            let nums = [];
-            let parts = input.split(',');
-            parts.forEach(p => {
-                if(p.includes('-')) {
-                    let range = p.split('-');
-                    let start = parseInt(range[0]);
-                    let end = parseInt(range[1]);
-                    for(let i=start; i<=end; i++) nums.push(i);
-                } else {
-                    nums.push(parseInt(p.trim()));
-                }
-            });
-            return nums.filter(n => !isNaN(n));
-        }
-
         function confirmSetup() {
             document.getElementById('team-l-label').innerText = document.getElementById('team-a-name').value;
             document.getElementById('team-r-label').innerText = document.getElementById('team-b-name').value;
             scoreA = 0; scoreB = 0;
             updateScoreDisplay();
             startGame(gameStyle);
-        }
-
-        function speakWord() {
-            const u = new SpeechSynthesisUtterance(currentWords[wordIndex]);
-            u.lang = 'en-US'; window.speechSynthesis.speak(u);
         }
 
         function startGame(style) {
@@ -411,7 +368,9 @@
 
             wordIndex = 0;
             isWaitingForNext = false;
-            currentLayout = 'qwerty'; // Reset to standard layout on start
+            capsState = { p: false, l: false, r: false };
+            layoutState = { p: 'qwerty', l: 'qwerty', r: 'qwerty' };
+
             hideNextButtons();
             if(gameMode === 'practice') { 
                 showScreen('game-screen'); 
@@ -427,16 +386,98 @@
             const container = document.getElementById(containerId);
             const currentText = clearDisplay ? "" : (document.getElementById(side + "-display")?.innerText || "");
             container.innerHTML = '';
-            const word = currentWords[wordIndex];
-
+            
             if(gameStyle === 'spell') {
                 const display = document.createElement('div');
-                display.id = side + "-display"; display.className = "display-area";
+                display.id = side + "-display"; 
+                display.className = "display-area";
                 display.innerText = currentText;
                 container.appendChild(display);
-                renderKeyboard(container, side);
+                
+                const kbWrap = document.createElement('div');
+                kbWrap.id = side + "-kb-wrap";
+                container.appendChild(kbWrap);
+                renderKeyboard(side);
             } else {
-                renderUnscramble(container, side, word);
+                renderUnscramble(container, side, currentWords[wordIndex]);
+            }
+        }
+
+        function renderKeyboard(side) {
+            const kbWrap = document.getElementById(side + "-kb-wrap");
+            if(!kbWrap) return;
+            kbWrap.innerHTML = '';
+
+            const kb = document.createElement('div'); kb.className = "keyboard";
+            const activeKeys = (layoutState[side] === 'qwerty') ? qwerty : symbols;
+
+            activeKeys.forEach(row => {
+                const rowDiv = document.createElement('div'); rowDiv.className = "kb-row";
+                row.forEach(l => {
+                    const k = document.createElement('div'); k.className = "key";
+                    k.innerText = (capsState[side] && layoutState[side] === 'qwerty') ? l.toUpperCase() : l.toLowerCase();
+                    k.onclick = (e) => { e.stopPropagation(); handleInput(side, k.innerText); };
+                    rowDiv.appendChild(k);
+                });
+                kb.appendChild(rowDiv);
+            });
+
+            const row4 = document.createElement('div'); row4.className = "kb-row";
+            
+            const toggleBtn = document.createElement('div');
+            toggleBtn.className = "key";
+            toggleBtn.innerText = (layoutState[side] === 'qwerty') ? "123" : "ABC";
+            toggleBtn.style.width = "60px";
+            toggleBtn.onclick = (e) => {
+                e.stopPropagation();
+                layoutState[side] = (layoutState[side] === 'qwerty') ? 'symbols' : 'qwerty';
+                renderKeyboard(side);
+            };
+
+            if (layoutState[side] === 'qwerty') {
+                const shift = document.createElement('div'); 
+                shift.className = "key" + (capsState[side] ? " key-active" : ""); 
+                shift.innerText = "SHIFT"; 
+                shift.onclick = (e) => { 
+                    e.stopPropagation();
+                    if(!isWaitingForNext) { 
+                        capsState[side] = !capsState[side]; 
+                        renderKeyboard(side); 
+                    } 
+                };
+                row4.appendChild(shift);
+            }
+
+            const space = document.createElement('div'); space.className = "key"; space.innerText = "SPACE"; space.style.width="80px"; 
+            space.onclick = (e) => { e.stopPropagation(); handleInput(side, " "); };
+            
+            const del = document.createElement('div'); del.className = "key"; del.innerText = "DEL"; 
+            del.onclick = (e) => {
+                e.stopPropagation();
+                if(isWaitingForNext) return;
+                const d = document.getElementById(side + "-display"); d.innerText = d.innerText.slice(0, -1);
+            };
+
+            row4.appendChild(toggleBtn);
+            row4.appendChild(space); 
+            row4.appendChild(del);
+            kb.appendChild(row4); 
+            kbWrap.appendChild(kb);
+        }
+
+        function handleInput(side, char) {
+            if(isWaitingForNext) return;
+            const display = document.getElementById(side + "-display");
+            display.innerText += char;
+            
+            if(capsState[side]) {
+                capsState[side] = false;
+                renderKeyboard(side);
+            }
+            
+            if(display.innerText.trim().toLowerCase() === currentWords[wordIndex].trim().toLowerCase()) {
+                display.classList.add('correct-flash');
+                handleWin(side);
             }
         }
 
@@ -451,22 +492,18 @@
             poolDiv.className = "letter-pool";
             poolDiv.id = side + "-pool";
 
-            const words = phrase.split(' ');
-            words.forEach((w, wordIdx) => {
+            phrase.split(' ').forEach(w => {
                 const wordGroup = document.createElement('div');
                 wordGroup.className = "word-group";
-                
                 w.split('').forEach(char => {
                     const slot = document.createElement('div');
                     slot.className = "slot";
-                    slot.onclick = () => {
+                    slot.onclick = (e) => {
+                        e.stopPropagation();
                         if(isWaitingForNext || !slot.innerText) return;
                         const tileId = slot.dataset.tileId;
-                        const originalTile = document.getElementById(tileId);
-                        if(originalTile) originalTile.style.visibility = "visible";
+                        document.getElementById(tileId).style.visibility = "visible";
                         slot.innerText = "";
-                        slot.style.background = "rgba(255,255,255,0.5)";
-                        slot.style.border = "3px dashed #ccc";
                         slot.classList.remove('filled');
                     };
                     wordGroup.appendChild(slot);
@@ -480,15 +517,14 @@
                 tile.className = "tile";
                 tile.id = side + "-tile-" + index;
                 tile.innerText = l;
-                tile.onclick = () => {
+                tile.onclick = (e) => {
+                    e.stopPropagation();
                     if(isWaitingForNext) return;
-                    const emptySlots = targetDiv.querySelectorAll('.slot');
-                    for(let slot of emptySlots) {
+                    const slots = targetDiv.querySelectorAll('.slot');
+                    for(let slot of slots) {
                         if(!slot.innerText) {
                             slot.innerText = l;
                             slot.dataset.tileId = tile.id;
-                            slot.style.background = "var(--bee-yellow)";
-                            slot.style.border = "3px solid black";
                             slot.classList.add('filled');
                             tile.style.visibility = "hidden";
                             checkUnscrambleWin(side, phrase);
@@ -512,78 +548,6 @@
             if(attempt === targetNoSpaces) handleWin(side);
         }
 
-        function renderKeyboard(container, side) {
-            const kb = document.createElement('div'); kb.className = "keyboard";
-            
-            // Choose the keys based on the state
-            const activeKeys = (currentLayout === 'qwerty') ? qwerty : symbols;
-
-            activeKeys.forEach(row => {
-                const rowDiv = document.createElement('div'); rowDiv.className = "kb-row";
-                row.forEach(l => {
-                    const k = document.createElement('div'); k.className = "key";
-                    // Only apply caps if in QWERTY layout
-                    k.innerText = (isCaps && currentLayout === 'qwerty') ? l.toUpperCase() : l.toLowerCase();
-                    k.onclick = () => handleInput(side, k.innerText);
-                    rowDiv.appendChild(k);
-                });
-                kb.appendChild(rowDiv);
-            });
-
-            const row4 = document.createElement('div'); row4.className = "kb-row";
-            
-            // Toggle Button
-            const toggleBtn = document.createElement('div');
-            toggleBtn.className = "key";
-            toggleBtn.innerText = (currentLayout === 'qwerty') ? "123" : "ABC";
-            toggleBtn.style.width = "60px";
-            toggleBtn.onclick = () => {
-                currentLayout = (currentLayout === 'qwerty') ? 'symbols' : 'qwerty';
-                renderRound(container.id, side, false);
-            };
-
-            // Shift Button (Only show for QWERTY)
-            if (currentLayout === 'qwerty') {
-                const shift = document.createElement('div'); 
-                shift.className = "key" + (isCaps ? " key-active" : ""); 
-                shift.innerText = "SHIFT"; 
-                shift.onclick = () => { 
-                    if(!isWaitingForNext) { 
-                        isCaps = !isCaps; 
-                        renderRound(container.id, side, false); 
-                    } 
-                };
-                row4.appendChild(shift);
-            }
-
-            const space = document.createElement('div'); space.className = "key"; space.innerText = "SPACE"; space.style.width="80px"; space.onclick = () => handleInput(side, " ");
-            
-            const del = document.createElement('div'); del.className = "key"; del.innerText = "DEL"; del.onclick = () => {
-                if(isWaitingForNext) return;
-                const d = document.getElementById(side + "-display"); d.innerText = d.innerText.slice(0, -1);
-            };
-
-            row4.appendChild(toggleBtn);
-            row4.appendChild(space); 
-            row4.appendChild(del);
-            kb.appendChild(row4); 
-            container.appendChild(kb);
-        }
-
-        function handleInput(side, char) {
-            if(isWaitingForNext) return;
-            const display = document.getElementById(side + "-display");
-            display.innerText += char;
-            if(isCaps) {
-                isCaps = false;
-                renderRound(side === 'p' ? 'p-play' : side + '-play', side, false);
-            }
-            if(display.innerText.trim().toLowerCase() === currentWords[wordIndex].trim().toLowerCase()) {
-                display.classList.add('correct-flash');
-                handleWin(side);
-            }
-        }
-
         function handleWin(side) {
             if(isWaitingForNext) return;
             isWaitingForNext = true;
@@ -603,15 +567,15 @@
         function nextWord() {
             wordIndex++;
             isWaitingForNext = false;
-            isCaps = false;
-            currentLayout = 'qwerty'; // Revert to ABC when moving to next word
+            capsState = { p: false, l: false, r: false };
+            layoutState = { p: 'qwerty', l: 'qwerty', r: 'qwerty' };
             hideNextButtons();
             if(wordIndex >= currentWords.length) { 
                 alert(`GAME OVER!\nFinal Scores:\nTeam A: ${scoreA}\nTeam B: ${scoreB}`); 
                 showScreen('menu-screen'); 
             } else {
-                if(gameMode === 'practice') renderRound('p-play', 'p', true);
-                else { renderRound('l-play', 'l', true); renderRound('r-play', 'r', true); }
+                if(gameMode === 'practice') renderRound('p-play', 'p');
+                else { renderRound('l-play', 'l'); renderRound('r-play', 'r'); }
             }
         }
 
@@ -620,32 +584,37 @@
             document.getElementById('next-btn-duel').style.display = 'none';
         }
 
+        function speakWord() {
+            const u = new SpeechSynthesisUtterance(currentWords[wordIndex]);
+            u.lang = 'en-US'; window.speechSynthesis.speak(u);
+        }
+
+        function pickStudent(side) {
+            let inputId = (side === 'p') ? 'student-list-p' : (side === 'l' ? 'team-a-nums' : 'team-b-nums');
+            let val = document.getElementById(inputId).value;
+            let nums = [];
+            val.split(',').forEach(p => {
+                if(p.includes('-')) {
+                    let range = p.split('-');
+                    for(let i=parseInt(range[0]); i<=parseInt(range[1]); i++) nums.push(i);
+                } else nums.push(parseInt(p));
+            });
+            nums = nums.filter(n => !isNaN(n));
+            if(nums.length === 0) return;
+            document.getElementById('num-' + side).innerText = nums[Math.floor(Math.random() * nums.length)];
+        }
+
         function saveWords() {
             const list = document.getElementById('word-input').value.split('\n').filter(x => x.trim());
             if(list.length) {
                 const encoded = btoa(JSON.stringify(list));
-                const baseUrl = window.location.href.split('?')[0];
-                const fullLink = baseUrl + "?w=" + encoded;
+                const fullLink = window.location.href.split('?')[0] + "?w=" + encoded;
                 const display = document.getElementById('link-display-box');
                 display.innerText = "SHARE THIS LINK: " + fullLink;
                 display.style.display = 'block';
-                originalWords = list;
                 navigator.clipboard.writeText(fullLink);
-                alert("Link Copied to Clipboard!");
+                alert("Link Copied!");
             }
-        }
-
-        function showHistory() {
-            const list = document.getElementById('history-list');
-            list.innerHTML = '';
-            const history = JSON.parse(localStorage.getItem('history_links') || "[]");
-            history.forEach(item => {
-                const b = document.createElement('button');
-                b.className = "btn btn-small"; b.innerText = "Link from " + item.date;
-                b.onclick = () => { window.location.href = item.url; };
-                list.appendChild(b);
-            });
-            showScreen('history-screen');
         }
 
         function loadByCode() {
