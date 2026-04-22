@@ -8,11 +8,11 @@
         :root {
             --honey-yellow: #fff9c4;
             --bee-yellow: #ffeb3b;
-            --bee-black: #000000; /* Set to pure black for high contrast */
+            --bee-black: #000000;
             --soft-white: #ffffff;
             --border-color: #fbc02d;
             --success-green: #4caf50;
-            --game-scale: 1; /* Variable for zoom feature */
+            --game-scale: 1;
         }
 
         body {
@@ -30,7 +30,6 @@
             overflow: hidden;
         }
         
-        /* Animated Bee Styles */
         .pastel-bee {
             position: absolute; width: 50px; height: 40px; background: var(--bee-yellow);
             border-radius: 50%; border: 2px solid #000; opacity: 0.8; z-index: 0;
@@ -55,9 +54,8 @@
         .screen { display: none; min-height: 100vh; flex-direction: column; align-items: center; padding: 20px; box-sizing: border-box; position: relative; z-index: 1; }
         .active { display: flex; }
         
-        /* Header Styling */
-        .main-title { font-size: 5rem; font-weight: 900; margin: 20px 0 0 0; text-align: center; color: var(--bee-black); line-height: 1; }
-        .sub-title { font-size: 1.8rem; margin: 0 0 30px 0; font-weight: normal; color: var(--bee-black); }
+        .main-title { font-size: clamp(3rem, 10vw, 5rem); font-weight: 900; margin: 20px 0 0 0; text-align: center; color: var(--bee-black); line-height: 1; }
+        .sub-title { font-size: clamp(1.2rem, 5vw, 1.8rem); margin: 0 0 30px 0; font-weight: normal; color: var(--bee-black); text-align: center; }
 
         .btn {
             background-color: var(--bee-yellow); border: 3px solid var(--bee-black);
@@ -73,7 +71,7 @@
         .game-picker {
             background: #fff; border: 3px solid var(--bee-black); border-radius: 15px;
             padding: 10px; display: flex; align-items: center; gap: 10px; margin-bottom: 15px;
-            color: var(--bee-black);
+            color: var(--bee-black); flex-wrap: wrap; justify-content: center;
         }
 
         .scoreboard {
@@ -82,28 +80,49 @@
             border: 3px solid var(--bee-black); margin-bottom: 10px;
         }
 
-        .display-area { font-size: 2.5rem; font-weight: bold; height: 60px; margin: 10px; border-bottom: 5px solid var(--bee-black); text-align: center; min-width: 200px; white-space: pre; color: var(--bee-black); }
+        .display-area { font-size: 2.5rem; font-weight: bold; min-height: 60px; margin: 10px; border-bottom: 5px solid var(--bee-black); text-align: center; min-width: 200px; white-space: pre-wrap; word-break: break-word; color: var(--bee-black); }
         .correct-flash { color: var(--success-green); border-bottom-color: var(--success-green) !important; }
 
         .unscramble-container { 
             display: flex; flex-direction: column; align-items: center; width: 100%; 
             transform: scale(var(--game-scale)); transform-origin: top center;
         }
-        .target-slots { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin: 20px 0; min-height: 65px; width: 95%; }
+
+        /* ENHANCEMENT 1 & 3: Layout Logic for wrapping */
+        .target-slots { 
+            display: flex; 
+            flex-wrap: wrap; 
+            justify-content: center; 
+            gap: 15px; 
+            margin: 20px 0; 
+            min-height: 65px; 
+            width: 100%; 
+        }
+
+        .word-group {
+            display: flex;
+            gap: 5px;
+            justify-content: center;
+        }
         
         .slot {
-            width: 50px; height: 60px; border: 3px dashed #ccc; border-radius: 10px;
-            display: flex; align-items: center; justify-content: center; font-size: 1.8rem; font-weight: bold;
+            width: clamp(35px, 8vw, 50px); 
+            height: clamp(45px, 10vw, 60px); 
+            border: 3px dashed #ccc; border-radius: 10px;
+            display: flex; align-items: center; justify-content: center; 
+            font-size: clamp(1.2rem, 5vw, 1.8rem); 
+            font-weight: bold;
             background: rgba(255,255,255,0.5); cursor: default; color: var(--bee-black);
         }
         .slot.filled { cursor: pointer; }
-        .slot.space-slot { border: none; background: transparent; width: 30px; }
         
-        .letter-pool { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; width: 95%; padding: 20px; background: #fdfdfd; border-radius: 20px; border: 2px solid #eee; }
+        .letter-pool { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; width: 95%; padding: 15px; background: #fdfdfd; border-radius: 20px; border: 2px solid #eee; }
         .tile {
-            width: 50px; height: 60px; background: var(--bee-yellow); border: 3px solid var(--bee-black);
+            width: clamp(35px, 8vw, 50px); 
+            height: clamp(45px, 10vw, 60px); 
+            background: var(--bee-yellow); border: 3px solid var(--bee-black);
             border-radius: 10px; display: flex; align-items: center; justify-content: center;
-            font-size: 1.8rem; font-weight: bold; cursor: pointer; box-shadow: 0 4px 0 #000; color: var(--bee-black);
+            font-size: clamp(1.2rem, 5vw, 1.8rem); font-weight: bold; cursor: pointer; box-shadow: 0 4px 0 #000; color: var(--bee-black);
         }
 
         .keyboard { 
@@ -112,10 +131,12 @@
         }
         .kb-row { display: flex; justify-content: center; margin-bottom: 5px; width: 100%; }
         .key {
-            min-width: 45px; height: 55px; margin: 3px; background: #fff;
-            border: 3px solid var(--bee-black); border-radius: 10px;
+            min-width: clamp(30px, 8vw, 45px); 
+            height: clamp(40px, 10vw, 55px); 
+            margin: 2px; background: #fff;
+            border: 2px solid var(--bee-black); border-radius: 8px;
             display: flex; align-items: center; justify-content: center;
-            font-weight: bold; font-size: 1.3rem; cursor: pointer; user-select: none;
+            font-weight: bold; font-size: 1rem; cursor: pointer; user-select: none;
             font-family: inherit; color: var(--bee-black);
         }
         .key-active { background: var(--bee-yellow); transform: translateY(2px); box-shadow: none; }
@@ -127,24 +148,22 @@
         input, textarea { font-family: inherit; font-size: 1.1rem; border-radius: 8px; border: 2px solid #ccc; padding: 5px; color: var(--bee-black); }
 
         #link-display-box {
-            word-break: break-all;
-            background: #eee;
-            padding: 10px;
-            border-radius: 10px;
-            font-size: 0.8rem;
-            margin-top: 10px;
-            max-width: 80%;
-            display: none;
-            color: var(--bee-black);
+            word-break: break-all; background: #eee; padding: 10px; border-radius: 10px;
+            font-size: 0.8rem; margin-top: 10px; max-width: 80%; display: none; color: var(--bee-black);
         }
 
-        /* Control UI */
         .control-group {
             display: flex; flex-direction: column; align-items: center; gap: 10px;
             margin: 15px 0; padding: 15px; border: 2px solid #ddd; border-radius: 15px;
         }
         .zoom-ctrl { display: flex; align-items: center; gap: 10px; margin: 10px 0; }
         .radio-group { display: flex; gap: 20px; font-weight: bold; }
+
+        @media (max-width: 600px) {
+            .duel-container { flex-direction: column; height: auto; }
+            .team-side { border: none; border-bottom: 2px solid #eee; min-height: 40vh; }
+            .main-title { font-size: 3rem; }
+        }
     </style>
 </head>
 <body>
@@ -184,7 +203,7 @@
                 <label><input type="radio" name="order-d" value="shuffle"> Shuffle</label>
             </div>
         </div>
-        <div style="display:flex; gap: 20px; margin-bottom: 20px;">
+        <div style="display:flex; flex-wrap: wrap; justify-content:center; gap: 20px; margin-bottom: 20px;">
             <div style="text-align:center;">
                 <h3>TEAM A</h3>
                 <input type="text" id="team-a-name" value="TEAM A"><br><br>
@@ -202,7 +221,7 @@
     <div id="game-screen" class="screen">
         <div class="game-picker">
             <span>Student #</span>
-            <input type="text" id="student-list-p" value="1-20" style="width:100px;">
+            <input type="text" id="student-list-p" value="1-20" style="width:80px;">
             <button class="btn btn-small" onclick="pickStudent('p')">PICK</button>
             <b id="num-p" style="font-size:1.5rem; margin-left:10px;">-</b>
             <div class="zoom-ctrl" style="margin-left: 20px; border-left: 1px solid #ccc; padding-left: 15px;">
@@ -260,7 +279,17 @@
     </div>
 
     <script>
-        let originalWords = ["Happy Bee", "English Class", "Great Job"];
+        // ENHANCEMENT 2: Updated Default Vocabulary
+        let originalWords = [
+            "Marie's Creative Classroom", 
+            "Motivate", 
+            "Achieve", 
+            "Reflect", 
+            "Inspire", 
+            "Empower", 
+            "Happy Teaching"
+        ];
+        
         let currentWords = [...originalWords];
         let wordIndex = 0;
         let gameMode = 'practice';
@@ -279,9 +308,9 @@
                     originalWords = JSON.parse(atob(data));
                     currentWords = [...originalWords];
                     document.getElementById('load-msg').style.display = 'block';
-                    document.getElementById('word-input').value = originalWords.join('\n');
                 } catch(e) { console.log("URL load error"); }
             }
+            document.getElementById('word-input').value = originalWords.join('\n');
         };
 
         function adjustZoom(val) {
@@ -296,7 +325,6 @@
             return array;
         }
 
-        // --- Animations ---
         function createBees() {
             const menu = document.getElementById('menu-screen');
             for(let i=0; i<5; i++) {
@@ -364,14 +392,11 @@
                 return;
             }
 
-            // Word Order Logic
             const orderSelector = (gameMode === 'practice') ? 'order-p' : 'order-d';
             const orderVal = document.querySelector(`input[name="${orderSelector}"]:checked`).value;
             
             currentWords = [...originalWords];
-            if(orderVal === 'shuffle') {
-                shuffleArray(currentWords);
-            }
+            if(orderVal === 'shuffle') shuffleArray(currentWords);
 
             wordIndex = 0;
             isWaitingForNext = false;
@@ -403,7 +428,8 @@
             }
         }
 
-        function renderUnscramble(container, side, word) {
+        // ENHANCEMENT 1: Intelligent Word Wrapping Implementation
+        function renderUnscramble(container, side, phrase) {
             const wrapper = document.createElement('div');
             wrapper.className = "unscramble-container";
             const targetDiv = document.createElement('div');
@@ -414,12 +440,14 @@
             poolDiv.className = "letter-pool";
             poolDiv.id = side + "-pool";
 
-            for(let char of word) {
-                const slot = document.createElement('div');
-                if(char === " ") {
-                    slot.className = "slot space-slot";
-                    slot.innerText = " ";
-                } else {
+            // Split phrase into words to create grouped containers
+            const words = phrase.split(' ');
+            words.forEach((w, wordIdx) => {
+                const wordGroup = document.createElement('div');
+                wordGroup.className = "word-group";
+                
+                w.split('').forEach(char => {
+                    const slot = document.createElement('div');
                     slot.className = "slot";
                     slot.onclick = () => {
                         if(isWaitingForNext || !slot.innerText) return;
@@ -431,11 +459,12 @@
                         slot.style.border = "3px dashed #ccc";
                         slot.classList.remove('filled');
                     };
-                }
-                targetDiv.appendChild(slot);
-            }
+                    wordGroup.appendChild(slot);
+                });
+                targetDiv.appendChild(wordGroup);
+            });
 
-            const letters = word.replace(/\s/g, '').split('').sort(() => Math.random() - 0.5);
+            const letters = phrase.replace(/\s/g, '').split('').sort(() => Math.random() - 0.5);
             letters.forEach((l, index) => {
                 const tile = document.createElement('div');
                 tile.className = "tile";
@@ -443,7 +472,7 @@
                 tile.innerText = l;
                 tile.onclick = () => {
                     if(isWaitingForNext) return;
-                    const emptySlots = targetDiv.querySelectorAll('.slot:not(.space-slot)');
+                    const emptySlots = targetDiv.querySelectorAll('.slot');
                     for(let slot of emptySlots) {
                         if(!slot.innerText) {
                             slot.innerText = l;
@@ -452,7 +481,7 @@
                             slot.style.border = "3px solid black";
                             slot.classList.add('filled');
                             tile.style.visibility = "hidden";
-                            checkUnscrambleWin(side, word);
+                            checkUnscrambleWin(side, phrase);
                             break;
                         }
                     }
@@ -465,14 +494,17 @@
             container.appendChild(wrapper);
         }
 
-        function checkUnscrambleWin(side, word) {
+        function checkUnscrambleWin(side, phrase) {
             const slots = document.getElementById(side + "-target").querySelectorAll('.slot');
             let attempt = "";
+            let charIndex = 0;
+            const targetNoSpaces = phrase.replace(/\s/g, '');
+            
             slots.forEach(s => {
-                if(s.classList.contains('space-slot')) attempt += " ";
-                else attempt += s.innerText || "";
+                attempt += s.innerText || "";
             });
-            if(attempt === word) handleWin(side);
+
+            if(attempt === targetNoSpaces) handleWin(side);
         }
 
         function renderKeyboard(container, side) {
@@ -497,7 +529,7 @@
                     renderRound(container.id, side, false); 
                 } 
             };
-            const space = document.createElement('div'); space.className = "key"; space.innerText = "SPACE"; space.style.width="120px"; space.onclick = () => handleInput(side, " ");
+            const space = document.createElement('div'); space.className = "key"; space.innerText = "SPACE"; space.style.width="80px"; space.onclick = () => handleInput(side, " ");
             const del = document.createElement('div'); del.className = "key"; del.innerText = "DEL"; del.onclick = () => {
                 if(isWaitingForNext) return;
                 const d = document.getElementById(side + "-display"); d.innerText = d.innerText.slice(0, -1);
@@ -514,7 +546,7 @@
                 isCaps = false;
                 renderRound(side === 'p' ? 'p-play' : side + '-play', side, false);
             }
-            if(display.innerText === currentWords[wordIndex]) {
+            if(display.innerText.trim().toLowerCase() === currentWords[wordIndex].trim().toLowerCase()) {
                 display.classList.add('correct-flash');
                 handleWin(side);
             }
@@ -588,8 +620,6 @@
             if(val.includes('?w=')) window.location.href = val;
             else alert("Please paste a full game link.");
         }
-        
-        document.getElementById('word-input').value = originalWords.join('\n');
     </script>
 </body>
 </html>
