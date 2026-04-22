@@ -160,6 +160,34 @@
         .zoom-ctrl { display: flex; align-items: center; gap: 10px; margin: 10px 0; }
         .radio-group { display: flex; gap: 20px; font-weight: bold; }
 
+        /* History List Styling */
+        .history-list {
+            width: 80%;
+            max-height: 300px;
+            overflow-y: auto;
+            background: white;
+            border: 3px solid var(--bee-black);
+            border-radius: 15px;
+            padding: 10px;
+            margin-top: 20px;
+        }
+        .history-item {
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+            word-break: break-all;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .history-item:last-child { border-bottom: none; }
+        .history-link {
+            color: #1976d2;
+            text-decoration: none;
+            font-size: 0.9rem;
+            flex-grow: 1;
+            margin-right: 10px;
+        }
+
         @media (max-width: 600px) {
             .duel-container { flex-direction: column; height: auto; }
             .team-side { border: none; border-bottom: 2px solid #eee; min-height: 40vh; }
@@ -179,6 +207,7 @@
         <button class="btn" onclick="openModeSelect('duel')">TEAM DUEL</button>
         <button class="btn" onclick="showScreen('edit-screen')">EDIT LIST</button>
         <button class="btn" onclick="showScreen('code-screen')">GAME LINK</button>
+        <button class="btn" onclick="showHistory()">LINK HISTORY</button>
     </div>
 
     <div id="mode-screen" class="screen">
@@ -273,6 +302,13 @@
         <button class="btn" onclick="loadByCode()">LOAD</button>
     </div>
 
+    <div id="history-screen" class="screen">
+        <h2>LINK HISTORY</h2>
+        <p>Last 10 game links opened:</p>
+        <div id="history-container" class="history-list"></div>
+        <button class="btn btn-small" style="margin-top:20px;" onclick="clearHistory()">CLEAR HISTORY</button>
+    </div>
+
     <script>
         let originalWords = ["Marie", "Creative", "Classroom", "Motivate", "Achieve", "Reflect", "Inspire", "Empower"];
         let currentWords = [...originalWords];
@@ -283,7 +319,6 @@
         let scoreA = 0;
         let scoreB = 0;
 
-        // --- NEW INDEPENDENT STATES ---
         let capsState = { p: false, l: false, r: false };
         let layoutState = { p: 'qwerty', l: 'qwerty', r: 'qwerty' };
 
@@ -301,16 +336,55 @@
         window.onload = () => {
             const params = new URLSearchParams(window.location.search);
             const data = params.get('w');
+            
+            // History Tracking
             if(data) {
                 try {
                     originalWords = JSON.parse(atob(data));
                     currentWords = [...originalWords];
                     document.getElementById('load-msg').style.display = 'block';
+                    saveToHistory(window.location.href);
                 } catch(e) { console.log("URL load error"); }
             }
             document.getElementById('word-input').value = originalWords.join('\n');
             createBees();
         };
+
+        // --- HISTORY FUNCTIONS ---
+        function saveToHistory(link) {
+            let history = JSON.parse(localStorage.getItem('spellBeeHistory') || "[]");
+            // Remove if already exists (to move to top)
+            history = history.filter(item => item !== link);
+            // Add to start
+            history.unshift(link);
+            // Keep only 10
+            if(history.length > 10) history = history.slice(0, 10);
+            localStorage.setItem('spellBeeHistory', JSON.stringify(history));
+        }
+
+        function showHistory() {
+            const container = document.getElementById('history-container');
+            const history = JSON.parse(localStorage.getItem('spellBeeHistory') || "[]");
+            container.innerHTML = history.length ? "" : "<p style='text-align:center'>No history yet</p>";
+            
+            history.forEach((link, index) => {
+                const item = document.createElement('div');
+                item.className = 'history-item';
+                item.innerHTML = `
+                    <a href="${link}" class="history-link">Game Link ${history.length - index}</a>
+                    <button class="btn btn-small" onclick="navigator.clipboard.writeText('${link}'); alert('Copied!');">Copy</button>
+                `;
+                container.appendChild(item);
+            });
+            showScreen('history-screen');
+        }
+
+        function clearHistory() {
+            if(confirm("Clear all history?")) {
+                localStorage.removeItem('spellBeeHistory');
+                showHistory();
+            }
+        }
 
         function adjustZoom(val) {
             document.documentElement.style.setProperty('--game-scale', val);
@@ -580,8 +654,10 @@
         }
 
         function hideNextButtons() {
-            document.getElementById('next-btn-p').style.display = 'none';
-            document.getElementById('next-btn-duel').style.display = 'none';
+            const btnP = document.getElementById('next-btn-p');
+            const btnD = document.getElementById('next-btn-duel');
+            if(btnP) btnP.style.display = 'none';
+            if(btnD) btnD.style.display = 'none';
         }
 
         function speakWord() {
